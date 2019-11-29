@@ -1,19 +1,16 @@
+DEBUG ?= 0
+
 PROJECTFOLDER = $(shell pwd)
 
-ifeq ($(CONFIG_UROS_DIR),)
-	TOPFOLDER = $(PROJECTFOLDER)/..
-	UROS_DIR = $(TOPFOLDER)/mcu_ws
-else
-	UROS_DIR = $(CONFIG_UROS_DIR)
-	TOPFOLDER = $(UROS_DIR)/..
-endif
+TOPFOLDER = $(PROJECTFOLDER)/..
+UROS_DIR = $(TOPFOLDER)/mcu_ws
 
 EXTENSIONS_DIR = $(TOPFOLDER)/crazyflie_microros_extensions
 TRANSPORTS_DIR = $(EXTENSIONS_DIR)/transports
+CRAZYFLIE_BASE = $(TOPFOLDER)/crazyflie_firmware
 
 CROSSDEV = arm-none-eabi-
 ARCHCPUFLAGS =  -DARM_MATH_CM4 -D__FPU_PRESENT=1 -D__TARGET_FPU_VFP  -mfloat-abi=hard -mfpu=fpv4-sp-d16 -mcpu=cortex-m4 -mthumb -ffunction-sections -fdata-sections
-# ARCHOPTIMIZATION = -Os -g3
 
 ifeq ($(DEBUG), 1)
 	ARCHCPUFLAGS += -O0 -g3
@@ -22,25 +19,58 @@ else
 	BUILD_TYPE = Release
 endif
 
-MICROROS_INCLUDES += $(shell find $(UROS_DIR)/install -name 'include' | sed -E "s/(.*)/-I\1/")
+# micro-ROS variables
 
+MICROROS_INCLUDES += $(shell find $(UROS_DIR)/install -name 'include' | sed -E "s/(.*)/-I\1/")
 MICROROS_INCLUDES += -I$(EXTENSIONS_DIR)/include
 MICROROS_INCLUDES += -I$(EXTENSIONS_DIR)/include/sys
 MICROROS_INCLUDES += -I$(EXTENSIONS_DIR)/include/private
 MICROROS_INCLUDES += -I$(EXTENSIONS_DIR)/FreeRTOS-Plus-POSIX/include
 MICROROS_INCLUDES += -I$(EXTENSIONS_DIR)/FreeRTOS-Plus-POSIX/include/portable
 MICROROS_INCLUDES += -I$(EXTENSIONS_DIR)/FreeRTOS-Plus-POSIX/include/portable/crazyflie
+MICROROS_INCLUDES += -I$(CRAZYFLIE_BASE)/src/lib/FreeRTOS/include
 
 MICROROS_LIBRARIES = libmicroros.a
 
-MICROROS_POSIX_FREERTOS_OBJECTS_VPATH =  $(EXTENSIONS_DIR)/FreeRTOS-Plus-POSIX/source
-MICROROS_POSIX_FREERTOS_OBJECTS = FreeRTOS_POSIX_clock.o FreeRTOS_POSIX_pthread_mutex.o FreeRTOS_POSIX_semaphore.o FreeRTOS_POSIX_mqueue.o FreeRTOS_POSIX_sched.o FreeRTOS_POSIX_pthread.o FreeRTOS_POSIX_timer.o FreeRTOS_POSIX_pthread_barrier.o FreeRTOS_POSIX_unistd.o FreeRTOS_POSIX_pthread_cond.o FreeRTOS_POSIX_utils.o libatomic.o
+MICROROS_POSIX_FREERTOS_OBJECTS_VPATH +=  $(EXTENSIONS_DIR)/FreeRTOS-Plus-POSIX/source
 
-COLCON_INCLUDES = $(EXTENSIONS_DIR)/FreeRTOS-Plus-POSIX/include $(EXTENSIONS_DIR)/include $(EXTENSIONS_DIR)/include/private $(EXTENSIONS_DIR)/include/FreeRTOS_POSIX $(EXTENSIONS_DIR)/include/FreeRTOS_POSIX/sys
-COLCON_INCLUDES += $(PROJECTFOLDER)/src/hal/interface $(PROJECTFOLDER)/src/modules/interface $(PROJECTFOLDER)/src/utils/interface $(PROJECTFOLDER)/src/config $(PROJECTFOLDER)/src/drivers/interface
+MICROROS_POSIX_FREERTOS_OBJECTS += FreeRTOS_POSIX_clock.o 
+MICROROS_POSIX_FREERTOS_OBJECTS += FreeRTOS_POSIX_sched.o 
+MICROROS_POSIX_FREERTOS_OBJECTS += FreeRTOS_POSIX_unistd.o 
+MICROROS_POSIX_FREERTOS_OBJECTS += FreeRTOS_POSIX_utils.o 
+MICROROS_POSIX_FREERTOS_OBJECTS += libatomic.o
+
+COLCON_INCLUDES += $(EXTENSIONS_DIR)/FreeRTOS-Plus-POSIX/include 
+COLCON_INCLUDES += $(EXTENSIONS_DIR)/include 
+COLCON_INCLUDES += $(EXTENSIONS_DIR)/include/private 
+COLCON_INCLUDES += $(EXTENSIONS_DIR)/include/FreeRTOS_POSIX 
+COLCON_INCLUDES += $(EXTENSIONS_DIR)/include/FreeRTOS_POSIX/sys
+COLCON_INCLUDES += $(CRAZYFLIE_BASE)/src/hal/interface 
+COLCON_INCLUDES += $(CRAZYFLIE_BASE)/src/modules/interface 
+COLCON_INCLUDES += $(CRAZYFLIE_BASE)/src/utils/interface 
+COLCON_INCLUDES += $(CRAZYFLIE_BASE)/src/config 
+COLCON_INCLUDES += $(CRAZYFLIE_BASE)/src/drivers/interface
 COLCON_INCLUDES_STR := $(foreach x,$(COLCON_INCLUDES),$(x)\n)
 
-all: libmicroros
+
+# Crazyflie 2.1 app configuration
+
+APP = 1
+APP_STACKSIZE = 2100
+APP_PRIORITY = 3
+
+PROJ_OBJ += microrosapp.o
+MEMMANG_OBJ = custom_memory_manager.o
+PROJ_OBJ += $(MICROROS_LIBRARIES) 
+PROJ_OBJ += $(MICROROS_POSIX_FREERTOS_OBJECTS)
+INCLUDES += $(MICROROS_INCLUDES)
+VPATH += $(MICROROS_POSIX_FREERTOS_OBJECTS_VPATH) 
+VPATH += $(EXTENSIONS_DIR)/
+CFLAGS += -DFREERTOS_HEAP_SIZE=52500
+
+include $(CRAZYFLIE_BASE)/Makefile
+
+# micro-ROS targets
 
 arm_toolchain.cmake: $(EXTENSIONS_DIR)/arm_toolchain.cmake.in
 	rm -f $(EXTENSIONS_DIR)/arm_toolchain.cmake; \
@@ -77,39 +107,5 @@ libmicroros: colcon_compile
 		done; \
 		cd ..; rm -rf $$folder; \
 	done ; \
-	ar rc libmicroros.a *.obj; cp libmicroros.a $(PROJECTFOLDER)/bin/; ranlib $(PROJECTFOLDER)/bin/libmicroros.a;\
+	ar rc libmicroros.a *.obj; mkdir -p $(EXTENSIONS_DIR)/bin; cp libmicroros.a $(EXTENSIONS_DIR)/bin; ranlib $(EXTENSIONS_DIR)/bin/libmicroros.a; \
 	cd ..; rm -rf libmicroros;
-
-
-# find "$(UROS_DIR)"/install -name '*.a' | xargs -I{} cp "{}" $(PROJECTFOLDER)/bin/ ;
-
-
-# colcon_compile: arm_toolchain.cmake
-# 	cd $(UROS_DIR); \
-# 	rm -rf build install log; \
-# 	colcon build \
-# 		--packages-ignore-regex=.*_cpp \
-# 		--cmake-args \
-#  		-DBUILD_SHARED_LIBS=OFF \
-# 		-DCMAKE_POSITION_INDEPENDENT_CODE=ON \
-# 		-DTHIRDPARTY=ON \
-# 		-DBUILD_TESTING=OFF \
-# 		-DCMAKE_BUILD_TYPE=$(BUILD_TYPE) \
-# 		-DCMAKE_TOOLCHAIN_FILE=$(EXTENSIONS_DIR)/arm_toolchain.cmake \
-# 		-DCMAKE_VERBOSE_MAKEFILE=ON; \
-# 	find "$(UROS_DIR)"/install -name '*.a' | xargs -I{} cp "{}" $(PROJECTFOLDER)/bin/ ;
-
-	
-# colcon_compile: arm_toolchain.cmake
-# 	cd $(UROS_DIR); \
-# 	rm -rf build install log; \
-# 	colcon build \
-# 		--packages-up-to microxrcedds_client \
-# 		--packages-ignore-regex=.*_cpp \
-# 		--cmake-args \
-# 		-DBUILD_SHARED_LIBS=OFF \
-# 		-DCMAKE_POSITION_INDEPENDENT_CODE=ON \
-# 		-DBUILD_TESTING=OFF \
-# 		-DCMAKE_BUILD_TYPE=$(BUILD_TYPE) \
-# 		-DCMAKE_TOOLCHAIN_FILE=$(EXTENSIONS_DIR)/arm_toolchain.cmake \
-# 		-DCMAKE_VERBOSE_MAKEFILE=ON \
