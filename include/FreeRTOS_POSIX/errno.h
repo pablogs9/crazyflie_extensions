@@ -211,12 +211,9 @@
 
 
 // TODO (Pablogs): Check where is the place to include this configuration
-#define configUSE_POSIX_ERRNO 1
 
-#if ( configUSE_POSIX_ERRNO == 1 )
-    extern int FreeRTOS_errno;
-    #define errno    FreeRTOS_errno
-#endif
+extern int FreeRTOS_errno;
+#define errno    FreeRTOS_errno
 /**@} */
 
 #endif /* ifndef _FREERTOS_POSIX_ERRNO_H_ */
