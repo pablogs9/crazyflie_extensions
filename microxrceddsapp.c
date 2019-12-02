@@ -40,7 +40,7 @@ static uint32_t Point32_odo_size_of_topic(const Point32_odo* topic, uint32_t siz
 void appMain(){
 
   //Init micro-XRCE-DDS session.
-  vTaskDelay(10000);
+  vTaskDelay(2000);
   int radio_connected = logGetVarId("radio", "isConnected");
   while(!logGetUint(radio_connected)) vTaskDelay(100);
   DEBUG_PRINT("Radio connected\r\n");

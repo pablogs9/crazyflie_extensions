@@ -37,13 +37,14 @@ BUILD_INCLUDES_STR := $(foreach x,$(BUILD_INCLUDES),$(x)\n)
 # Crazyflie 2.1 app configuration
 
 APP = 1
-APP_STACKSIZE = 500
+APP_STACKSIZE = 2100
 APP_PRIORITY = 3
 
 PROJ_OBJ += microxrceddsapp.o
 PROJ_OBJ += $(MICROXRCE_LIBRARIES) 
 INCLUDES += $(MICROXRCE_INCLUDES)
 VPATH += $(PROJECTFOLDER)
+CFLAGS += -DFREERTOS_HEAP_SIZE=52500
 
 include $(CRAZYFLIE_BASE)/Makefile
 
@@ -63,7 +64,7 @@ arm_toolchain.cmake: arm_toolchain.cmake.in
 
 libmicroxrcedds: arm_toolchain.cmake
 	cd $(PROJECTFOLDER)/Micro-XRCE-DDS-Client; rm -rf build; mkdir build; cd build; \
-	cmake .. -DCMAKE_INSTALL_PREFIX=./install -DCMAKE_TOOLCHAIN_FILE=$(PROJECTFOLDER)/arm_toolchain.cmake && make && make install; \
+	cmake .. -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) -DUCLIENT_PIC=OFF -DCMAKE_INSTALL_PREFIX=./install -DCMAKE_TOOLCHAIN_FILE=$(PROJECTFOLDER)/arm_toolchain.cmake && make && make install; \
 	cd $(PROJECTFOLDER); mkdir -p $(PROJECTFOLDER)/bin/; \
 	cp $(PROJECTFOLDER)/Micro-XRCE-DDS-Client/build/install/lib/libmicrocdr.a $(PROJECTFOLDER)/bin/; \
 	cp $(PROJECTFOLDER)/Micro-XRCE-DDS-Client/build/install/lib/libmicroxrcedds_client.a $(PROJECTFOLDER)/bin/	
