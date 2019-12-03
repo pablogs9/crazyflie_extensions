@@ -9,7 +9,6 @@ EXTENSIONS_DIR = $(TOPFOLDER)/crazyflie_microros_extensions
 TRANSPORTS_DIR = $(EXTENSIONS_DIR)/transports
 CRAZYFLIE_BASE = $(TOPFOLDER)/crazyflie_firmware
 
-CROSSDEV = arm-none-eabi-
 ARCHCPUFLAGS =  -DARM_MATH_CM4 -D__FPU_PRESENT=1 -D__TARGET_FPU_VFP  -mfloat-abi=hard -mfpu=fpv4-sp-d16 -mcpu=cortex-m4 -mthumb -ffunction-sections -fdata-sections
 
 ifeq ($(DEBUG), 1)
@@ -67,6 +66,7 @@ INCLUDES += $(MICROROS_INCLUDES)
 VPATH += $(MICROROS_POSIX_FREERTOS_OBJECTS_VPATH) 
 VPATH += $(EXTENSIONS_DIR)/
 CFLAGS += -DFREERTOS_HEAP_SIZE=52500
+CROSS_COMPILE = arm-none-eabi-
 
 include $(CRAZYFLIE_BASE)/Makefile
 
@@ -75,7 +75,7 @@ include $(CRAZYFLIE_BASE)/Makefile
 arm_toolchain.cmake: $(EXTENSIONS_DIR)/arm_toolchain.cmake.in
 	rm -f $(EXTENSIONS_DIR)/arm_toolchain.cmake; \
 	cat $(EXTENSIONS_DIR)/arm_toolchain.cmake.in | \
-		sed "s/@CROSSDEV@/$(CROSSDEV)/g" | \
+		sed "s/@CROSS_COMPILE@/$(subst /,\/,$(CROSS_COMPILE))/g" | \
 		sed "s/@FREERTOS_TOPDIR@/$(subst /,\/,$(TOPFOLDER))/g" | \
 		sed "s/@ARCH_CPU_FLAGS@/\"$(ARCHCPUFLAGS)\"/g" | \
 		sed "s/@ARCH_OPT_FLAGS@/\"$(ARCHOPTIMIZATION)\"/g" | \
