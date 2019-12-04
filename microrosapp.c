@@ -44,14 +44,19 @@ void appMain(){
     rcl_init_options_t init_options;
     rcl_ret_t          rc;
     init_options = rcl_get_zero_initialized_init_options();
-    
-    rcl_allocator_t * freeRTOS_allocator = (rcl_allocator_t *) rcutils_get_default_allocator_pointer();
-    freeRTOS_allocator->allocate = __crazyflie_allocate;
-    freeRTOS_allocator->deallocate = __crazyflie_deallocate;
-    freeRTOS_allocator->reallocate = __crazyflie_reallocate;
-    freeRTOS_allocator->zero_allocate = __crazyflie_zero_allocate;
 
-    rc = rcl_init_options_init(&init_options, *freeRTOS_allocator);
+    rcl_allocator_t freeRTOS_allocator = rcutils_get_zero_initialized_allocator();
+    freeRTOS_allocator.allocate = __crazyflie_allocate;
+    freeRTOS_allocator.deallocate = __crazyflie_deallocate;
+    freeRTOS_allocator.reallocate = __crazyflie_reallocate;
+    freeRTOS_allocator.zero_allocate = __crazyflie_zero_allocate;
+
+    if (!rcutils_set_default_allocator(&freeRTOS_allocator)) {
+        DEBUG_PRINT("rcutils_set_default_allocator error\r\n");
+        vTaskSuspend( NULL );
+    }
+
+    rc = rcl_init_options_init(&init_options, rcutils_get_default_allocator());
     
     if (rc != RCL_RET_OK) {
         DEBUG_PRINT("rcl_init_options_init error\r\n");
