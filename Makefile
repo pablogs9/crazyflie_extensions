@@ -5,7 +5,7 @@ TOPFOLDER = $(PROJECTFOLDER)/..
 TRANSPORTS_DIR = $(PROJECTFOLDER)/transports
 CRAZYFLIE_BASE = $(PROJECTFOLDER)/crazyflie-firmware
 
-CROSSDEV = arm-none-eabi-
+CROSS_COMPILE = $(PROJECTFOLDER)/toolchain/bin/arm-none-eabi-
 ARCHCPUFLAGS =  -DARM_MATH_CM4 -D__FPU_PRESENT=1 -D__TARGET_FPU_VFP  -mfloat-abi=hard -mfpu=fpv4-sp-d16 -mcpu=cortex-m4 -mthumb -ffunction-sections -fdata-sections
 
 ifeq ($(DEBUG), 1)
@@ -53,7 +53,7 @@ include $(CRAZYFLIE_BASE)/Makefile
 arm_toolchain.cmake: arm_toolchain.cmake.in
 	rm -f $(PROJECTFOLDER)/arm_toolchain.cmake; \
 	cat $(PROJECTFOLDER)/arm_toolchain.cmake.in | \
-		sed "s/@CROSSDEV@/$(CROSSDEV)/g" | \
+		sed "s/@CROSS_COMPILE@/$(subst /,\/,$(CROSS_COMPILE))/g" | \
 		sed "s/@FREERTOS_TOPDIR@/$(subst /,\/,$(TOPFOLDER))/g" | \
 		sed "s/@EXTERNAL_TRANSPORT_HEADER@/$(subst /,\/,$(EXTERNAL_TRANSPORT_HEADER))/g" | \
 		sed "s/@EXTERNAL_TRANSPORT@/$(subst /,\/,$(EXTERNAL_TRANSPORT))/g" | \

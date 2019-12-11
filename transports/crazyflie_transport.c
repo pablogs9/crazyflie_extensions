@@ -1,4 +1,3 @@
-#include "serial_transport_internal.h"
 #include "crazyflie_transport.h"
 
 #include <unistd.h>

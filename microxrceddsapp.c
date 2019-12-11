@@ -3,16 +3,7 @@
 #include "task.h"
 
 #include <uxr/client/client.h>
-// #include <uxr/client/profile/transport/serial/serial_transport.h>
-// #include <uxr/client/profile/transport/serial/serial_transport_crazyflie.h>
 #include <ucdr/microcdr.h>
-
-#include <stdio.h> //printf
-#include <string.h> //strcmp
-#include <stdlib.h> //atoi
-
-#include <stdint.h>
-#include <stdbool.h>
 
 #include "config.h"
 #include "crtp.h"

@@ -3,3 +3,4 @@ arm_toolchain.cmake
 current_platform.mk
 bin/*
 version.c
+toolchain/
