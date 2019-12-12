@@ -2,17 +2,11 @@
 #include "FreeRTOS.h"
 #include "task.h"
 
-#include <rcl/error_handling.h>
+// #include <rcl/error_handling.h>
 #include <rcl/rcl.h>
 #include <geometry_msgs/msg/point32.h>
 
 #include <rcutils/allocator.h>
-
-#include <stdio.h> //printf
-#include <string.h> //strcmp
-#include <stdlib.h> //atoi
-#include <stdint.h>
-#include <stdbool.h>
 
 #include "config.h"
 #include "log.h"
@@ -22,6 +16,9 @@
 #include "debug.h"
 
 #include "microrosapp.h"
+
+#define RCCHECK(msg) if((rc != RCL_RET_OK)){DEBUG_PRINT("Failed status on line %d: %d. Aborting.\n",__LINE__,(int)rc); vTaskSuspend( NULL );}
+#define RCSOFTCHECK(msg) if((rc != RCL_RET_OK)){DEBUG_PRINT("Failed status on line %d: %d. Continuing.\n",__LINE__,(int)rc);}
 
 static int pitchid, rollid, yawid;
 static int Xid, Yid, Zid;
@@ -33,7 +30,7 @@ void appMain(){
     vTaskDelay(2000);
     int radio_connected = logGetVarId("radio", "isConnected");
     while(!logGetUint(radio_connected)) vTaskDelay(100);
-    DEBUG_PRINT("Radio connected\r\n");
+    DEBUG_PRINT("Radio connected\n");
 
     // ####################### MICROROS INIT #######################
 
@@ -52,24 +49,17 @@ void appMain(){
     freeRTOS_allocator.zero_allocate = __crazyflie_zero_allocate;
 
     if (!rcutils_set_default_allocator(&freeRTOS_allocator)) {
-        DEBUG_PRINT("rcutils_set_default_allocator error\r\n");
+        DEBUG_PRINT("Error on default allocators (line %d)\n",__LINE__); 
         vTaskSuspend( NULL );
     }
 
     rc = rcl_init_options_init(&init_options, rcutils_get_default_allocator());
-    
-    if (rc != RCL_RET_OK) {
-        DEBUG_PRINT("rcl_init_options_init error\r\n");
-        vTaskSuspend( NULL );
-    }
+    RCCHECK()
 
     context = rcl_get_zero_initialized_context();
 
     rc = rcl_init(0, NULL, &init_options, &context);
-    if (rc != RCL_RET_OK) {
-        vTaskSuspend( NULL );
-        DEBUG_PRINT("rcl_init error\r\n");
-    }
+    RCCHECK()
 
     rc = rcl_init_options_fini(&init_options);
 
@@ -77,6 +67,7 @@ void appMain(){
     rcl_node_options_t node_ops = rcl_node_get_default_options();
 
     rc = rcl_node_init(&node, "crazyflie_node", "", &context, &node_ops);
+    RCCHECK()
 
     // Create publisher 1
     const char* drone_odom = "/drone/odometry";
@@ -91,6 +82,7 @@ void appMain(){
         pub_type_support_odom,
         drone_odom,
         &pub_opt_odom);
+    RCCHECK()
 
     // Create publisher 2
     const char* drone_attitude = "/drone/attitude";
@@ -105,7 +97,29 @@ void appMain(){
         pub_type_support_att,
         drone_attitude,
         &pub_opt_att);
+    RCCHECK()
 
+    // Create subscriber 1
+    const char * echo_topic_name = "/drone/echo";
+
+    rcl_subscription_t sub_echo      = rcl_get_zero_initialized_subscription();
+    const rosidl_message_type_support_t * sub_type_support = ROSIDL_GET_MSG_TYPE_SUPPORT(geometry_msgs, msg, Point32);
+    rcl_subscription_options_t subscription_ops = rcl_subscription_get_default_options();
+
+    rc = rcl_subscription_init(
+        &sub_echo,
+        &node,
+        sub_type_support,
+        echo_topic_name,
+        &subscription_ops);
+    RCCHECK()
+
+    // Create wait set
+    rcl_wait_set_t wait_set = rcl_get_zero_initialized_wait_set();
+    rc = rcl_wait_set_init(&wait_set, 1, 0, 0, 0, 0, 0, &context, rcl_get_default_allocator());
+    RCCHECK()
+
+    // Init messages 
     geometry_msgs__msg__Point32 pose;
     geometry_msgs__msg__Point32__init(&pose);
     geometry_msgs__msg__Point32 odom;
@@ -129,25 +143,52 @@ void appMain(){
     DEBUG_PRINT("uROS Absolute Used Memory %d bytes\n", absoluteUsedMemory);
 
     while(1){
-      float pitch = logGetFloat(pitchid);
-      float roll  = logGetFloat(rollid);
-      float yaw   = logGetFloat(yawid);
-      float x     = logGetFloat(Xid);
-      float y     = logGetFloat(Yid);
-      float z     = logGetFloat(Zid);
+        float pitch = logGetFloat(pitchid);
+        float roll  = logGetFloat(rollid);
+        float yaw   = logGetFloat(yawid);
+        float x     = logGetFloat(Xid);
+        float y     = logGetFloat(Yid);
+        float z     = logGetFloat(Zid);
 
-      pose.x = pitch;
-      pose.y = roll;
-      pose.z = yaw;
+        pose.x = pitch;
+        pose.y = roll;
+        pose.z = yaw;
 
-      odom.x = x;
-      odom.y = y;
-      odom.z = z;
+        odom.x = x;
+        odom.y = y;
+        odom.z = z;
 
-      rc = rcl_publish( &pub_odom, (const void *) &odom, NULL);
-      rc = rcl_publish( &pub_attitude, (const void *) &pose, NULL);
+        rc = rcl_publish( &pub_odom, (const void *) &odom, NULL);
+        RCSOFTCHECK()
+        // DEBUG_PRINT("Publishing odom [%f, %f, %f]\n",(float)pitch,(float)roll,(float)yaw);
 
-      vTaskDelay(100/portTICK_RATE_MS);
+
+        rc = rcl_publish( &pub_attitude, (const void *) &pose, NULL);
+        RCSOFTCHECK()
+        // DEBUG_PRINT("Publishing pose [%f, %f, %f]\n",(float)x,(float)y,(float)z);
+
+
+        rc = rcl_wait_set_clear(&wait_set);
+        RCSOFTCHECK()
+
+        rc = rcl_wait_set_add_subscription(&wait_set, &sub_echo, NULL);
+        RCSOFTCHECK()
+
+        rc = rcl_wait(&wait_set, RCL_MS_TO_NS(1));
+        // RCSOFTCHECK()
+        
+        if (rc == RCL_RET_OK && wait_set.subscriptions[0]){
+            geometry_msgs__msg__Point32 echo;
+            geometry_msgs__msg__Point32__init(&echo);
+            rmw_message_info_t        messageInfo;
+            rc = rcl_take(&sub_echo, &echo, &messageInfo, NULL);
+
+            if (rc == RCL_RET_OK) {
+                DEBUG_PRINT("Received command [%f %f %f]\n",(double)echo.x,(double)echo.y,(double)echo.z);
+            }           
+        }
+
+        vTaskDelay(10/portTICK_RATE_MS);
     }
     
     vTaskSuspend( NULL );
