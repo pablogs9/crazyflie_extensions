@@ -228,7 +228,7 @@ void appMain(){
 
 
         // Request topic subscription
-        uint16_t read_data_req = uxr_buffer_request_data(&session, reliable_out, datareader_id, reliable_in, NULL);
+        uxr_buffer_request_data(&session, reliable_out, datareader_id, reliable_in, NULL);
 
         // Run session
         uxr_run_session_until_timeout(&session, 500);

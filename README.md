@@ -9,22 +9,22 @@ It contains:
  - A sample app: microxrceddsapp.c
 
 
-## Toolchain
-
-```bash
-mkdir toolchain
-
-curl -fsSLO https://developer.arm.com/-/media/Files/downloads/gnu-rm/8-2019q3/RC1.1/gcc-arm-none-eabi-8-2019-q3-update-linux.tar.bz2 
-tar --strip-components=1 -xvjf gcc-arm-none-eabi-8-2019-q3-update-linux.tar.bz2 -C toolchain 
-rm gcc-arm-none-eabi-8-2019-q3-update-linux.tar.bz2
-```
-
 ## Building
 
 Clone this repository:
 
 ```bash
 git clone -b microxrceddsapps https://github.com/micro-ROS/crazyflie_extensions.git
+```
+
+Install the toolchain:
+
+```bash
+cd crazyflie_extensions; mkdir toolchain;
+
+curl -fsSLO https://developer.arm.com/-/media/Files/downloads/gnu-rm/8-2019q3/RC1.1/gcc-arm-none-eabi-8-2019-q3-update-linux.tar.bz2 
+tar --strip-components=1 -xvjf gcc-arm-none-eabi-8-2019-q3-update-linux.tar.bz2 -C toolchain 
+rm gcc-arm-none-eabi-8-2019-q3-update-linux.tar.bz2
 ```
 
 Update submodules:
@@ -52,6 +52,7 @@ make CLOAD=0
 Flash Crazyflie 2.1, make sure [DFU mode is enabled](https://www.bitcraze.io/docs/crazyflie-firmware/master/dfu/):
 
 ```bash
+apt install dfu-util
 dfu-util -d 0483:df11 -a 0 -s 0x08000000 -D cf2.bin
 ```
 
