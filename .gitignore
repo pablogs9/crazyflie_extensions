@@ -4,3 +4,4 @@ current_platform.mk
 bin/*
 version.c
 toolchain/
+.vscode

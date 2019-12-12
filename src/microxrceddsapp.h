@@ -5,18 +5,9 @@
 
 typedef struct Point32
 {
-    float roll;
-    float pitch;
-    float yaw;
-} Point32;
-
-typedef struct Point32_odometry
-{
     float x;
     float y;
     float z;
-} Point32_odo;
-
-struct ucdrBuffer;
+} Point32;
 
 void appMain();
