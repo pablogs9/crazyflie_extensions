@@ -228,8 +228,6 @@ void appMain(){
 
 
         // Request topic subscription
-        // uxrDeliveryControl delivery_control = {0};
-        // delivery_control.max_samples = UXR_MAX_SAMPLES_UNLIMITED;
         uint16_t read_data_req = uxr_buffer_request_data(&session, reliable_out, datareader_id, reliable_in, NULL);
 
         // Run session
