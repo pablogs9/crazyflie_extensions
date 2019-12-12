@@ -2,7 +2,6 @@
 #include "FreeRTOS.h"
 #include "task.h"
 
-// #include <rcl/error_handling.h>
 #include <rcl/rcl.h>
 #include <geometry_msgs/msg/point32.h>
 
@@ -14,6 +13,7 @@
 #include "worker.h"
 #include "num.h"
 #include "debug.h"
+#include <time.h>
 
 #include "microrosapp.h"
 
@@ -22,6 +22,26 @@
 
 static int pitchid, rollid, yawid;
 static int Xid, Yid, Zid;
+
+void guardConditionTask(void * gc){
+    struct timespec ts;
+    uint32_t delay;
+    float rand_n;
+
+    while(1){
+        rand_n = (rand() % 100) / 100.0;
+        delay = 1000 + ((uint32_t) rand_n*10000);
+
+        vTaskDelay(delay/portTICK_RATE_MS);
+
+        clock_gettime(CLOCK_REALTIME, &ts);
+
+        DEBUG_PRINT("Triggering guard condition at %d,%d\n",(int)ts.tv_sec,(int)(ts.tv_nsec/1000000LL));
+        rcl_ret_t rc = rcl_trigger_guard_condition((rcl_guard_condition_t *) gc);
+        RCSOFTCHECK()
+    }
+}
+
 
 void appMain(){ 
     absoluteUsedMemory = 0;
@@ -114,9 +134,17 @@ void appMain(){
         &subscription_ops);
     RCCHECK()
 
+    // Create guard condition
+    rcl_guard_condition_t gc1 = rcl_get_zero_initialized_guard_condition();
+    rcl_guard_condition_options_t gc1_options = rcl_guard_condition_get_default_options();
+    rc = rcl_guard_condition_init(&gc1,&context,gc1_options);
+    RCCHECK()
+    
+    xTaskCreate(guardConditionTask, "TRIGGERGC",300, (void *) &gc1, 3, NULL); // This task will eventually trigger the guard condtion
+
     // Create wait set
     rcl_wait_set_t wait_set = rcl_get_zero_initialized_wait_set();
-    rc = rcl_wait_set_init(&wait_set, 1, 0, 0, 0, 0, 0, &context, rcl_get_default_allocator());
+    rc = rcl_wait_set_init(&wait_set, 1, 1, 0, 0, 0, 0, &context, rcl_get_default_allocator());
     RCCHECK()
 
     // Init messages 
@@ -162,11 +190,9 @@ void appMain(){
         RCSOFTCHECK()
         // DEBUG_PRINT("Publishing odom [%f, %f, %f]\n",(float)pitch,(float)roll,(float)yaw);
 
-
         rc = rcl_publish( &pub_attitude, (const void *) &pose, NULL);
         RCSOFTCHECK()
         // DEBUG_PRINT("Publishing pose [%f, %f, %f]\n",(float)x,(float)y,(float)z);
-
 
         rc = rcl_wait_set_clear(&wait_set);
         RCSOFTCHECK()
@@ -174,18 +200,33 @@ void appMain(){
         rc = rcl_wait_set_add_subscription(&wait_set, &sub_echo, NULL);
         RCSOFTCHECK()
 
+        rc = rcl_wait_set_add_guard_condition(&wait_set, &gc1, NULL);
+        RCSOFTCHECK()
+
         rc = rcl_wait(&wait_set, RCL_MS_TO_NS(1));
         // RCSOFTCHECK()
         
-        if (rc == RCL_RET_OK && wait_set.subscriptions[0]){
-            geometry_msgs__msg__Point32 echo;
-            geometry_msgs__msg__Point32__init(&echo);
-            rmw_message_info_t        messageInfo;
-            rc = rcl_take(&sub_echo, &echo, &messageInfo, NULL);
+        if (rc == RCL_RET_OK){
+            // Check if subscription is available
+            if (wait_set.subscriptions[0])
+            {
+                geometry_msgs__msg__Point32 echo;
+                geometry_msgs__msg__Point32__init(&echo);
+                rmw_message_info_t        messageInfo;
+                rc = rcl_take(&sub_echo, &echo, &messageInfo, NULL);
 
-            if (rc == RCL_RET_OK) {
-                DEBUG_PRINT("Received command [%f %f %f]\n",(double)echo.x,(double)echo.y,(double)echo.z);
-            }           
+                if (rc == RCL_RET_OK) {
+                    DEBUG_PRINT("Received command [%f %f %f]\n",(double)echo.x,(double)echo.y,(double)echo.z);
+                }      
+            }
+            // Check if guard condition is triggered
+            if (wait_set.guard_conditions[0])
+            {
+                struct timespec ts;
+                clock_gettime(CLOCK_REALTIME, &ts);
+                DEBUG_PRINT("Guard condition readed at %d,%d\n",(int)ts.tv_sec,(int)(ts.tv_nsec/1000000LL));
+            }
+                 
         }
 
         vTaskDelay(10/portTICK_RATE_MS);

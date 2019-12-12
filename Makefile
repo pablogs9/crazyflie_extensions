@@ -22,7 +22,7 @@ endif
 
 MICROROS_INCLUDES += $(shell find $(UROS_DIR)/install -name 'include' | sed -E "s/(.*)/-I\1/")
 MICROROS_INCLUDES += -I$(EXTENSIONS_DIR)/include
-MICROROS_INCLUDES += -I$(EXTENSIONS_DIR)/include/sys
+MICROROS_INCLUDES += -I$(EXTENSIONS_DIR)/include/FreeRTOS_POSIX
 MICROROS_INCLUDES += -I$(EXTENSIONS_DIR)/include/private
 MICROROS_INCLUDES += -I$(EXTENSIONS_DIR)/FreeRTOS-Plus-POSIX/include
 MICROROS_INCLUDES += -I$(EXTENSIONS_DIR)/FreeRTOS-Plus-POSIX/include/portable
