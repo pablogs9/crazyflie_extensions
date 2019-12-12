@@ -61,5 +61,5 @@ dfu-util -d 0483:df11 -a 0 -s 0x08000000 -D cf2.bin
 Check [this port](https://github.com/eProsima/crazyflie-clients-python/tree/Micro-XRCE-DDS_Bridge):
 
 ```bash
-git clone -b Micro-XRCE-DDS_Bridge https://github.com/eProsima/crazyflie-clients-python/tree/Micro-XRCE-DDS_Bridge
+git clone -b Micro-XRCE-DDS_Bridge https://github.com/eProsima/crazyflie-clients-python
 ```
