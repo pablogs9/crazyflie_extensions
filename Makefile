@@ -87,8 +87,6 @@ colcon_compile: arm_toolchain.cmake
 	colcon build \
 		--packages-ignore-regex=.*_cpp \
 		--cmake-args \
-		-DUCLIENT_SUPERBUILD=OFF \
-		-DUCLIENT_PIC=OFF \
 		-DCMAKE_POSITION_INDEPENDENT_CODE=OFF \
 		-DTHIRDPARTY=ON \
 		-DBUILD_SHARED_LIBS=OFF \
