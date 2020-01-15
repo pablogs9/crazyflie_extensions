@@ -66,7 +66,7 @@ void rateCounter(void * n_packets){
         double elapsed = timespec_diff(&init,&end);
         double rate = ((double)*n)/elapsed;
 
-        DEBUG_PRINT("Subscription rate: %0.3f (%d p in %f s)\n",rate,*n,elapsed);
+        DEBUG_PRINT("Subscription rate: %0.3f (%d p in %f s)\n",rate,(int)*n,elapsed);
 
         *n = 0;
         clock_gettime(CLOCK_REALTIME, &init);
@@ -93,7 +93,7 @@ void sendRequestsTask(void * client){
             rcl_ret_t rc = rcl_send_request((rcl_client_t *)client, &req, &seq);
             RCSOFTCHECK()
 
-            DEBUG_PRINT("Sending service request %d + %d  at %d,%d. Seq %d\n",req.a, req.b, (int)ts.tv_sec,(int)(ts.tv_nsec/1000000LL),seq);
+            DEBUG_PRINT("Sending service request %d + %d  at %d,%d. Seq %d\n",(int)req.a, (int)req.b, (int)ts.tv_sec,(int)(ts.tv_nsec/1000000LL), (int)seq);
 
             client_waiting = true;
         // }
@@ -362,7 +362,7 @@ void appMain(){
             rc = rcl_take_response(&client,&req_id,&res);
             RCSOFTCHECK()
 
-            DEBUG_PRINT("Received service response %d at %d,%d. Seq %d\n",(int)res.sum, (int)ts.tv_sec,(int)(ts.tv_nsec/1000000LL),req_id.sequence_number);
+            DEBUG_PRINT("Received service response %d at %d,%d. Seq %d\n",(int)res.sum, (int)ts.tv_sec,(int)(ts.tv_nsec/1000000LL), (int)req_id.sequence_number);
 
             client_waiting = false;
         }
