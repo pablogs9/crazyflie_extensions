@@ -72,7 +72,7 @@ include $(CRAZYFLIE_BASE)/Makefile
 
 # micro-ROS targets
 
-arm_toolchain.cmake: $(EXTENSIONS_DIR)/arm_toolchain.cmake.in
+arm_toolchain: $(EXTENSIONS_DIR)/arm_toolchain.cmake.in
 	rm -f $(EXTENSIONS_DIR)/arm_toolchain.cmake; \
 	cat $(EXTENSIONS_DIR)/arm_toolchain.cmake.in | \
 		sed "s/@CROSS_COMPILE@/$(subst /,\/,$(CROSS_COMPILE))/g" | \
@@ -82,7 +82,7 @@ arm_toolchain.cmake: $(EXTENSIONS_DIR)/arm_toolchain.cmake.in
 		sed "s/@INCLUDES@/$(subst /,\/,$(COLCON_INCLUDES_STR))/g" \
 		> $(EXTENSIONS_DIR)/arm_toolchain.cmake
 
-colcon_compile: arm_toolchain.cmake
+colcon_compile: arm_toolchain
 	cd $(UROS_DIR); \
 	colcon build \
 		--packages-ignore-regex=.*_cpp \
