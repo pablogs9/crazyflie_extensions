@@ -50,7 +50,7 @@ include $(CRAZYFLIE_BASE)/Makefile
 
 # Micro-XRCE targets
 
-arm_toolchain.cmake: arm_toolchain.cmake.in
+arm_toolchain: arm_toolchain.cmake.in
 	rm -f $(PROJECTFOLDER)/arm_toolchain.cmake; \
 	cat $(PROJECTFOLDER)/arm_toolchain.cmake.in | \
 		sed "s/@CROSS_COMPILE@/$(subst /,\/,$(CROSS_COMPILE))/g" | \
@@ -62,9 +62,8 @@ arm_toolchain.cmake: arm_toolchain.cmake.in
 		sed "s/@INCLUDES@/$(subst /,\/,$(BUILD_INCLUDES_STR))/g" \
 		> $(PROJECTFOLDER)/arm_toolchain.cmake
 
-libmicroxrcedds: arm_toolchain.cmake
+libmicroxrcedds: arm_toolchain
 	cd $(PROJECTFOLDER)/Micro-XRCE-DDS-Client; rm -rf build; mkdir build; cd build; \
 	cmake .. -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) -DUCLIENT_PIC=OFF -DCMAKE_INSTALL_PREFIX=./install -DCMAKE_TOOLCHAIN_FILE=$(PROJECTFOLDER)/arm_toolchain.cmake && make && make install; \
 	cd $(PROJECTFOLDER); mkdir -p $(PROJECTFOLDER)/bin/; \
-	cp $(PROJECTFOLDER)/Micro-XRCE-DDS-Client/build/install/lib/libmicrocdr.a $(PROJECTFOLDER)/bin/; \
-	cp $(PROJECTFOLDER)/Micro-XRCE-DDS-Client/build/install/lib/libmicroxrcedds_client.a $(PROJECTFOLDER)/bin/	
+	cp -rf $(PROJECTFOLDER)/Micro-XRCE-DDS-Client/build/install/* $(PROJECTFOLDER)/bin/; \
