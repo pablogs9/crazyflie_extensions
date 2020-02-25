@@ -1,4 +1,4 @@
-DEBUG ?= 0
+DEBUG ?= 1
 
 PROJECTFOLDER = $(shell pwd)
 
@@ -55,7 +55,7 @@ COLCON_INCLUDES_STR := $(foreach x,$(COLCON_INCLUDES),$(x)\n)
 # Crazyflie 2.1 app configuration
 
 APP = 1
-APP_STACKSIZE = 2250
+APP_STACKSIZE = 2500
 APP_PRIORITY = 3
 
 PROJ_OBJ += microrosapp.o
