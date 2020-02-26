@@ -166,14 +166,14 @@ void appMain(){
         rc = rcl_publish( &pub_odom, (const void *) &odom, NULL);
         RCSOFTCHECK()
 
-        geometry_msgs__msg__Twist msg;
-        msg.angular.z = pose.y*3.14/180;
-        msg.linear.x = pose.x*3.14/180;
+        // geometry_msgs__msg__Twist msg;
+        // msg.angular.z = pose.y*3.14/180;
+        // msg.linear.x = pose.x*3.14/180;
 
-        msg.angular.z = (fabs(msg.angular.z) > 0.70) ? sign(msg.angular.z)*0.70 : msg.angular.z;
-        msg.linear.x = (fabs(msg.linear.x) > 0.20) ? sign(msg.linear.x)*0.20 : msg.linear.x;
+        // msg.angular.z = (fabs(msg.angular.z) > 0.70) ? sign(msg.angular.z)*0.70 : msg.angular.z;
+        // msg.linear.x = (fabs(msg.linear.x) > 0.20) ? sign(msg.linear.x)*0.20 : msg.linear.x;
 
-        rc = rcl_publish( &pub_vel, (const void *) &msg, NULL);
+        // rc = rcl_publish( &pub_vel, (const void *) &msg, NULL);
         
         vTaskDelay(10/portTICK_RATE_MS);
     }
